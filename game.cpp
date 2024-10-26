@@ -1,10 +1,11 @@
-#include <iostream>
+﻿#include <iostream>
 #include <thread>
 #include <chrono>
 #include <vector>
+#include <cctype>
+#include <limits>
 #include "game.h"
 #include "utils.h"
-
 
 void Game::setup() {
     playerBoard.resize(BOARD_SIZE, std::vector<char>(BOARD_SIZE, '-'));
@@ -21,12 +22,11 @@ void Game::play() {
 
     while (gameRunning) {
         std::cout << "Player's board:" << std::endl;
-        printBoard(playerBoard, true);  
+        printBoard(playerBoard, true);
 
         std::cout << "Computer's board:" << std::endl;
-        printBoard(computerBoard, false); 
+        printBoard(computerBoard, false);
 
-        
         while (true) {
             bool playerTurnContinue = playerTurn();
             if (allShipsSunk(computerBoard)) {
@@ -34,7 +34,7 @@ void Game::play() {
                 return;
             }
             if (!playerTurnContinue) {
-                break; 
+                break;
             }
         }
 
@@ -45,11 +45,11 @@ void Game::play() {
                 return;
             }
             if (!computerTurnContinue) {
-                break; 
+                break;
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(1)); 
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
@@ -64,7 +64,7 @@ void Game::initializeBoard(std::vector<std::vector<char>>& board) {
 void Game::printBoard(const std::vector<std::vector<char>>& board, bool reveal) {
     std::cout << "  ";
     for (int j = 0; j < BOARD_SIZE; ++j) {
-        std::cout << j << " ";
+        std::cout << static_cast<char>('A' + j) << " ";
     }
     std::cout << std::endl;
 
@@ -83,7 +83,7 @@ void Game::printBoard(const std::vector<std::vector<char>>& board, bool reveal) 
 }
 
 void Game::placeShips(std::vector<std::vector<char>>& board) {
-    int shipSizes[] = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 }; 
+    int shipSizes[] = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
 
     for (int size : shipSizes) {
         bool placed = false;
@@ -94,10 +94,10 @@ void Game::placeShips(std::vector<std::vector<char>>& board) {
 
             if (canPlaceShip(board, x, y, size, direction)) {
                 for (int i = 0; i < size; ++i) {
-                    if (direction == 0) {  
+                    if (direction == 0) {
                         board[x][y + i] = 'S';
                     }
-                    else { 
+                    else {
                         board[x + i][y] = 'S';
                     }
                 }
@@ -108,52 +108,40 @@ void Game::placeShips(std::vector<std::vector<char>>& board) {
 }
 
 bool Game::canPlaceShip(const std::vector<std::vector<char>>& board, int x, int y, int size, int direction) {
-    
-    if (direction == 0) { 
-        if (y + size > BOARD_SIZE) return false; 
+    if (direction == 0) {
+        if (y + size > BOARD_SIZE) return false;
 
-        
         for (int i = -1; i <= size; ++i) {
             for (int j = -1; j <= 1; ++j) {
                 int checkX = x + j;
                 int checkY = y + i;
 
                 if (checkX >= 0 && checkX < BOARD_SIZE && checkY >= 0 && checkY < BOARD_SIZE) {
-                    if (i >= 0 && i < size && j == 0) {
-                        
-                        continue;
-                    }
-                    if (board[checkX][checkY] != '-') return false; 
+                    if (i >= 0 && i < size && j == 0) continue;
+                    if (board[checkX][checkY] != '-') return false;
                 }
             }
         }
     }
-    
-    else { 
-        if (x + size > BOARD_SIZE) return false; 
+    else {
+        if (x + size > BOARD_SIZE) return false;
 
-        
         for (int i = -1; i <= size; ++i) {
             for (int j = -1; j <= 1; ++j) {
                 int checkX = x + i;
                 int checkY = y + j;
 
                 if (checkX >= 0 && checkX < BOARD_SIZE && checkY >= 0 && checkY < BOARD_SIZE) {
-                    if (i >= 0 && i < size && j == 0) {
-                       
-                        continue;
-                    }
-                    if (board[checkX][checkY] != '-') return false; 
+                    if (i >= 0 && i < size && j == 0) continue;
+                    if (board[checkX][checkY] != '-') return false;
                 }
             }
         }
     }
-    return true; 
+    return true;
 }
 
-
 bool Game::isShipSunk(const std::vector<std::vector<char>>& board, int x, int y) {
-    
     for (int i = y; i >= 0 && board[x][i] != '-'; --i) {
         if (board[x][i] == 'S') return false;
     }
@@ -161,7 +149,6 @@ bool Game::isShipSunk(const std::vector<std::vector<char>>& board, int x, int y)
         if (board[x][i] == 'S') return false;
     }
 
-    
     for (int i = x; i >= 0 && board[i][y] != '-'; --i) {
         if (board[i][y] == 'S') return false;
     }
@@ -169,49 +156,74 @@ bool Game::isShipSunk(const std::vector<std::vector<char>>& board, int x, int y)
         if (board[i][y] == 'S') return false;
     }
 
-    return true; 
+    return true;
 }
 
 bool Game::isHit(const std::vector<std::vector<char>>& board, int x, int y) {
-    return board[x][y] == 'S'; 
+    return board[x][y] == 'S';
 }
 
 bool Game::playerTurn() {
-    int x, y;
-    std::cout << "Enter coordinates to attack (format: x y): ";
+    char rowChar;
+    int col;
 
-    while (!(std::cin >> x >> y) || x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) {
-        std::cout << "Invalid coordinates! Try again." << std::endl;
+    while (true) {
+        std::cout << "Enter coordinates to attack (format: A1): ";
+        std::string input;
+        std::cin >> input;
 
-        
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Enter coordinates to attack (format: x y): ";
-    }
-
-    std::cout << "Player attacks at (" << x << ", " << y << ")" << std::endl;
-
-    if (isHit(computerBoard, x, y)) {
-        std::cout << "Hit!" << std::endl;
-        computerBoard[x][y] = 'X'; 
-        if (isShipSunk(computerBoard, x, y)) {
-            std::cout << "Ship sunk!" << std::endl;
+        // Проверка, что длина строки ввода корректна и ввод состоит из буквы и цифры
+        if (input.length() != 2 || !std::isalpha(input[0]) || !std::isdigit(input[1])) {
+            std::cout << "Invalid coordinates! Try again (format: A1)." << std::endl;
+            continue;
         }
-        std::cout << "Computer's board after hit:" << std::endl;
-        printBoard(computerBoard, false); 
-        return true;  
-    }
-    else {
-        std::cout << "Miss!" << std::endl;
-        computerBoard[x][y] = 'O';  
-        return false;  
+
+        rowChar = std::toupper(input[0]);
+
+        // Проверка, что вводимая буква находится в диапазоне 'A'-'J'
+        if (rowChar < 'A' || rowChar > 'J') {
+            std::cout << "Invalid row! Only A-J allowed. Try again." << std::endl;
+            continue;
+        }
+
+
+        col = input[1] - '0';  // Преобразуем символ цифры в число
+
+        // Проверка, что столбец находится в допустимом диапазоне
+        if (col < 0 || col >= BOARD_SIZE) {
+            std::cout << "Invalid column! Only 0-9 allowed. Try again." << std::endl;
+            continue;
+        }
+
+        int x = rowChar - 'A';  // Перевод буквы в индекс строки
+        int y = col;            // Столбец уже число
+
+        std::cout << "Player attacks at (" << rowChar << ", " << y << ")" << std::endl;
+
+        // Проверка на попадание
+        if (isHit(computerBoard, x, y)) {
+            std::cout << "Hit!" << std::endl;
+            computerBoard[x][y] = 'X';
+            if (isShipSunk(computerBoard, x, y)) {
+                std::cout << "Ship sunk!" << std::endl;
+            }
+            return true;
+        }
+        else {
+            std::cout << "Miss!" << std::endl;
+            computerBoard[x][y] = 'O';
+            return false;
+        }
     }
 }
+
+
+
 
 bool Game::computerTurn() {
     int x = getRandomNumber(0, BOARD_SIZE - 1);
     int y = getRandomNumber(0, BOARD_SIZE - 1);
-    std::cout << "Computer attacks at (" << x << ", " << y << ")" << std::endl;
+    std::cout << "Computer attacks at (" << static_cast<char>('A' + y) << ", " << x << ")" << std::endl;
 
     if (isHit(playerBoard, x, y)) {
         std::cout << "Computer hit!" << std::endl;
@@ -219,22 +231,25 @@ bool Game::computerTurn() {
         if (isShipSunk(playerBoard, x, y)) {
             std::cout << "Your ship is sunk!" << std::endl;
         }
-        return true; 
+        return true;
     }
     else {
         std::cout << "Computer missed!" << std::endl;
         playerBoard[x][y] = 'O';
-        return false; 
+        return false;
     }
 }
 
 bool Game::allShipsSunk(const std::vector<std::vector<char>>& board) {
     for (const auto& row : board) {
         for (char cell : row) {
-            if (cell == 'S') {  
-                return false;
-            }
+            if (cell == 'S') return false;
         }
     }
-    return true;  
+    return true;
 }
+
+
+//вобщем это почти готовый морской бой, хочу ещё добавить "умную стрельбу" компьютера (писал его точно я Денис Зуй, Сергей Владимирович)
+
+
