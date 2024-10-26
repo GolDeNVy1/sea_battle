@@ -172,20 +172,21 @@ bool Game::playerTurn() {
         std::string input;
         std::cin >> input;
 
-        // Проверка, что длина строки ввода корректна и ввод состоит из буквы и цифры
-        if (input.length() != 2 || !std::isalpha(input[0]) || !std::isdigit(input[1])) {
-            std::cout << "Invalid coordinates! Try again (format: A1)." << std::endl;
+        // Проверка, что строка имеет ровно 2 символа и находится в пределах допустимого диапазона
+        if (input.length() != 2 || input[0] < 0 || input[1] < 0 || !std::isalpha(input[0]) || !std::isdigit(input[1])) {
+            std::cout << "Invalid coordinates! Only A-J and 0-9 allowed. Try again." << std::endl;
             continue;
         }
 
         rowChar = std::toupper(input[0]);
 
-        // Проверка, что вводимая буква находится в диапазоне 'A'-'J'
+
+      
+        // Проверка, что первая буква находится в диапазоне 'A'-'J'
         if (rowChar < 'A' || rowChar > 'J') {
             std::cout << "Invalid row! Only A-J allowed. Try again." << std::endl;
             continue;
         }
-
 
         col = input[1] - '0';  // Преобразуем символ цифры в число
 
@@ -204,6 +205,7 @@ bool Game::playerTurn() {
         if (isHit(computerBoard, x, y)) {
             std::cout << "Hit!" << std::endl;
             computerBoard[x][y] = 'X';
+            printBoard(computerBoard, false); // Печатаем поле компьютера после попадания
             if (isShipSunk(computerBoard, x, y)) {
                 std::cout << "Ship sunk!" << std::endl;
             }
@@ -216,7 +218,6 @@ bool Game::playerTurn() {
         }
     }
 }
-
 
 
 
