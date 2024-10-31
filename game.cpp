@@ -40,7 +40,7 @@ void Game::play() {
 				break;
 			}
 		}
-
+		std::this_thread::sleep_for(std::chrono::seconds(3)); // пауза перед следующим ходом
 		// ход компьютера
 		while (true) {
 			bool computerTurnContinue = computerTurn(); // компьютер делает свой ход
@@ -53,7 +53,7 @@ void Game::play() {
 			}
 		}
 
-		std::this_thread::sleep_for(std::chrono::seconds(1)); // пауза перед следующим ходом
+		std::this_thread::sleep_for(std::chrono::seconds(3)); // пауза перед следующим ходом
 	}
 }
 
